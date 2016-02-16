@@ -67,7 +67,7 @@ class MimeReaderWriter implements IMimeReaderWriter
         );
 
         // Create changeset MIME part
-        $changeSet = new \Mail_mimePart();
+        $changeSet = new \Mail_mimePart(Resources::EMPTY_STRING);
         
         for ($i = 0; $i < $count; $i++) {
             $changeSet->addSubpart($bodyPartContents[$i], $options);

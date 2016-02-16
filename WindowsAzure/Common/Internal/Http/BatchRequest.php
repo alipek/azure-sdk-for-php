@@ -103,7 +103,7 @@ class BatchRequest
         );
 
         // Create changeset MIME part
-        $changeSet = new \Mail_mimePart();
+        $changeSet = new \Mail_mimePart(Resources::EMPTY_STRING);
 
         $i = 1;
         foreach ($this->_contexts as $context) {

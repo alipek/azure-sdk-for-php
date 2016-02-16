@@ -2362,17 +2362,59 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
     }
 
 
+    /**
+     * @param $destinationContainer
+     * @param $destinationBlob
+     * @param $sourceBlobPath
+     * @param null $options
+     * @return CopyBlobResult
+     * @throws \Exception
+     */
     public function copyExternalBlobSync($destinationContainer, $destinationBlob, $sourceBlobPath, $options = null)
     {
         $copyBlobResult = $this->copyExternalBlob($destinationContainer, $destinationBlob, $sourceBlobPath, $options);
-        if ($copyBlobResult->getXMsCopyStatus() != 'success') {
+        if ($copyBlobResult->getXMsCopyStatus() == 'pending') {
             do {
                 sleep(1);
                 $getBlobResult = $this->getBlob($destinationContainer, $destinationBlob);
-
-                $status = 1;
-            } while (!$status);
+                $copyStatus = $getBlobResult->getProperties()->getXMsCopyStatus();
+            } while ($copyStatus == 'pending');
             $copyBlobResult->setXMsCopyStatus('success');
+        }
+
+        // Check status:
+        if ($copyBlobResult->getXMsCopyStatus() != 'success') {
+            throw new \Exception('Unable to copy external blob - SYNC, copy status is: "' . $copyBlobResult->getXMsCopyStatus() . '"');
+        }
+
+        return $copyBlobResult;
+    }
+
+
+    /**
+     * @param $destinationContainer
+     * @param $destinationBlob
+     * @param $sourceContainer
+     * @param $sourceBlob
+     * @param null $options
+     * @return CopyBlobResult
+     * @throws \Exception
+     */
+    public function copyBlobSync($destinationContainer, $destinationBlob, $sourceContainer, $sourceBlob, $options = null)
+    {
+        $copyBlobResult = $this->copyBlob($destinationContainer, $destinationBlob, $sourceContainer, $sourceBlob, $options);
+        if ($copyBlobResult->getXMsCopyStatus() == 'pending') {
+            do {
+                sleep(1);
+                $getBlobResult = $this->getBlob($destinationContainer, $destinationBlob);
+                $copyStatus = $getBlobResult->getProperties()->getXMsCopyStatus();
+            } while ($copyStatus == 'pending');
+            $copyBlobResult->setXMsCopyStatus('success');
+        }
+
+        // Check status:
+        if ($copyBlobResult->getXMsCopyStatus() != 'success') {
+            throw new \Exception('Unable to copy blob - SYNC, copy status is: "' . $copyBlobResult->getXMsCopyStatus() . '"');
         }
 
         return $copyBlobResult;

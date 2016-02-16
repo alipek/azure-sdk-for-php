@@ -99,7 +99,19 @@ class BlobProperties
      * @var integer
      */
     private $_sequenceNumber;
+
+    /**
+     * @var string
+     */
+    private $_xMsCopyId;
     
+    /**
+     * @var string
+     */
+    private $_xMsCopyStatus;
+
+
+
     /**
      * Creates BlobProperties object from $parsed response in array representation
      * 
@@ -156,7 +168,13 @@ class BlobProperties
         $result->setContentType(
             Utilities::tryGetValue($clean, Resources::CONTENT_TYPE)
         );
-        
+        $result->setXMsCopyId(
+            Utilities::tryGetValue($clean, Resources::X_MS_COPY_ID)
+        );
+        $result->setXMsCopyStatus(
+            Utilities::tryGetValue($clean, Resources::X_MS_COPY_STATUS)
+        );
+
         return $result;
     }
 
@@ -426,6 +444,40 @@ class BlobProperties
         Validate::isInteger($sequenceNumber, 'sequenceNumber');
         $this->_sequenceNumber = $sequenceNumber;
     }
+
+    /**
+     * @return string
+     */
+    public function getXMsCopyId()
+    {
+        return $this->_xMsCopyId;
+    }
+
+    /**
+     * @param string $xMsCopyId
+     */
+    public function setXMsCopyId($xMsCopyId)
+    {
+        $this->_xMsCopyId = $xMsCopyId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getXMsCopyStatus()
+    {
+        return $this->_xMsCopyStatus;
+    }
+
+    /**
+     * @param string $xMsCopyStatus
+     */
+    public function setXMsCopyStatus($xMsCopyStatus)
+    {
+        $this->_xMsCopyStatus = $xMsCopyStatus;
+    }
+
+
 }
 
 

@@ -91,6 +91,7 @@ class MediaServicesRestProxy extends ServiceRestProxy implements IMediaServices
         Resources::CONTENT_TYPE             => Resources::XML_ATOM_CONTENT_TYPE
     );
 
+
     /**
      * @param $source
      * @param BlobRestProxy $mediaServiceRelatedProbProxy
@@ -115,7 +116,6 @@ class MediaServicesRestProxy extends ServiceRestProxy implements IMediaServices
 
         return $assetFile;
     }
-
 
 
     /**

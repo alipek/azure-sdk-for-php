@@ -2373,13 +2373,11 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
     public function copyExternalBlobSync($destinationContainer, $destinationBlob, $sourceBlobPath, $options = null)
     {
         $copyBlobResult = $this->copyExternalBlob($destinationContainer, $destinationBlob, $sourceBlobPath, $options);
-        echo "Copy0: " . $copyBlobResult->getXMsCopyStatus() . '\n';
         if ($copyBlobResult->getXMsCopyStatus() == 'pending') {
             do {
                 sleep(1);
                 $getBlobResult = $this->getBlob($destinationContainer, $destinationBlob);
                 $copyStatus = $getBlobResult->getProperties()->getXMsCopyStatus();
-                echo "Copy: " . $copyStatus . '\n';
             } while ($copyStatus == 'pending');
             $copyBlobResult->setXMsCopyStatus($copyStatus);
         }
@@ -2388,7 +2386,6 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
         if ($copyBlobResult->getXMsCopyStatus() != 'success') {
             throw new \Exception('Unable to copy external blob - SYNC, copy status is: "' . $copyBlobResult->getXMsCopyStatus() . '"');
         }
-        echo "CopyFinal: " . $copyBlobResult->getXMsCopyStatus() . '\n';
 
         return $copyBlobResult;
     }
@@ -2406,13 +2403,11 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
     public function copyBlobSync($destinationContainer, $destinationBlob, $sourceContainer, $sourceBlob, $options = null)
     {
         $copyBlobResult = $this->copyBlob($destinationContainer, $destinationBlob, $sourceContainer, $sourceBlob, $options);
-        echo "Copy0: " . $copyBlobResult->getXMsCopyStatus() . '\n';
         if ($copyBlobResult->getXMsCopyStatus() == 'pending') {
             do {
                 sleep(1);
                 $getBlobResult = $this->getBlob($destinationContainer, $destinationBlob);
                 $copyStatus = $getBlobResult->getProperties()->getXMsCopyStatus();
-                echo "Copy: " . $copyStatus . '\n';
             } while ($copyStatus == 'pending');
             $copyBlobResult->setXMsCopyStatus($copyStatus);
         }
@@ -2421,7 +2416,6 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
         if ($copyBlobResult->getXMsCopyStatus() != 'success') {
             throw new \Exception('Unable to copy blob - SYNC, copy status is: "' . $copyBlobResult->getXMsCopyStatus() . '"');
         }
-        echo "CopyFinal: " . $copyBlobResult->getXMsCopyStatus() . '\n';
 
         return $copyBlobResult;
     }

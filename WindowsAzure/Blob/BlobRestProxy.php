@@ -160,7 +160,7 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
         $encodedBlob = str_replace('%5C', '/', $encodedBlob);
         // Re-encode the spaces (encoded as space) to the % encoding.
         $encodedBlob = str_replace('+', '%20', $encodedBlob);
-        
+
         // Empty container means accessing default container
         if (empty($container)) {
             return $encodedBlob;
@@ -425,45 +425,47 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
      * @param string             $leaseId         The existing lease id.
      * @param BlobServiceOptions $options         The optional parameters.
      * @param AccessCondition    $accessCondition The access conditions.
+     * @param int $duration
+     * @throws \Exception
      * 
      * @return array
      */
-    private function _putLeaseImpl($leaseAction, $container, $blob, $leaseId, 
-        $options, $accessCondition = null
+    private function _putLeaseImpl($leaseAction, $container, $blob, $leaseId,
+                                   $options, $accessCondition = null, $duration = -1
     ) {
         Validate::isString($blob, 'blob');
         Validate::notNullOrEmpty($blob, 'blob');
         Validate::isString($container, 'container');
-        
+
         $method      = Resources::HTTP_PUT;
         $headers     = array();
         $queryParams = array();
         $postParams  = array();
         $path        = $this->_createPath($container, $blob);
         $statusCode  = Resources::EMPTY_STRING;
-        
+
         switch ($leaseAction) {
-        case LeaseMode::ACQUIRE_ACTION:
-            $this->addOptionalHeader($headers, Resources::X_MS_LEASE_DURATION, -1);
-            $statusCode = Resources::STATUS_CREATED;
-            break;
-        case LeaseMode::RENEW_ACTION:
-            $statusCode = Resources::STATUS_OK;
-            break;
-        case LeaseMode::RELEASE_ACTION:
-            $statusCode = Resources::STATUS_OK;
-            break;
-        case LeaseMode::BREAK_ACTION:
-            $statusCode = Resources::STATUS_ACCEPTED;
-            break;
-        default:
-            throw new \Exception(Resources::NOT_IMPLEMENTED_MSG);
+            case LeaseMode::ACQUIRE_ACTION:
+                $this->addOptionalHeader($headers, Resources::X_MS_LEASE_DURATION, $duration);
+                $statusCode = Resources::STATUS_CREATED;
+                break;
+            case LeaseMode::RENEW_ACTION:
+                $statusCode = Resources::STATUS_OK;
+                break;
+            case LeaseMode::RELEASE_ACTION:
+                $statusCode = Resources::STATUS_OK;
+                break;
+            case LeaseMode::BREAK_ACTION:
+                $statusCode = Resources::STATUS_ACCEPTED;
+                break;
+            default:
+                throw new \Exception(Resources::NOT_IMPLEMENTED_MSG);
         }
-        
+
         if (!is_null($options)) {
             $options = new BlobServiceOptions();
         }
-        
+
         $headers = $this->addOptionalAccessConditionHeader(
             $headers, $accessCondition
         );
@@ -480,16 +482,16 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
             Resources::QP_TIMEOUT,
             $options->getTimeout()
         );
-        
+
         $response = $this->send(
-            $method, 
-            $headers, 
-            $queryParams, 
+            $method,
+            $headers,
+            $queryParams,
             $postParams,
-            $path, 
+            $path,
             $statusCode
         );
-        
+
         return $response->getHeader();
     }
     
@@ -2358,20 +2360,125 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
         
         return CopyBlobResult::create($response->getHeader());
     }
-        
+
+
+    public function copyExternalBlobSync($destinationContainer, $destinationBlob, $sourceBlobPath, $options = null)
+    {
+        $copyBlobResult = $this->copyExternalBlob($destinationContainer, $destinationBlob, $sourceBlobPath, $options);
+        if ($copyBlobResult->getXMsCopyStatus() != 'success') {
+            do {
+                sleep(1);
+                $getBlobResult = $this->getBlob($destinationContainer, $destinationBlob);
+
+                $status = 1;
+            } while (!$status);
+            $copyBlobResult->setXMsCopyStatus('success');
+        }
+
+        return $copyBlobResult;
+    }
+
+    /**
+     * Copies a source blob to a destination blob from different storage account.
+     *
+     * @param string                 $destinationContainer name of the destination
+     * container
+     * @param string                 $destinationBlob      name of the destination
+     * blob
+     * @param string                 $sourceBlobPath      name of the source
+     * blob
+     * @param Models\CopyBlobOptions $options              optional parameters
+     *
+     * @return CopyBlobResult
+     *
+     * @see http://msdn.microsoft.com/en-us/library/windowsazure/dd894037.aspx
+     */
+    public function copyExternalBlob(
+        $destinationContainer,
+        $destinationBlob,
+        $sourceBlobPath,
+        $options = null
+    )
+    {
+
+        $method = Resources::HTTP_PUT;
+        $headers = array();
+        $postParams = array();
+        $queryParams = array();
+        $destinationBlobPath = $this->_createPath(
+            $destinationContainer,
+            $destinationBlob
+        );
+        $statusCode = Resources::STATUS_ACCEPTED;
+
+        if (is_null($options)) {
+            $options = new CopyBlobOptions();
+        }
+
+        $this->addOptionalQueryParam(
+            $queryParams,
+            Resources::QP_TIMEOUT,
+            $options->getTimeout()
+        );
+
+
+        $headers = $this->addOptionalAccessConditionHeader(
+            $headers,
+            $options->getAccessCondition()
+        );
+
+        $headers = $this->addOptionalSourceAccessConditionHeader(
+            $headers,
+            $options->getSourceAccessCondition()
+        );
+
+        $this->addOptionalHeader(
+            $headers,
+            Resources::X_MS_COPY_SOURCE,
+            $sourceBlobPath
+        );
+
+        $headers = $this->addMetadataHeaders($headers, $options->getMetadata());
+
+        $this->addOptionalHeader(
+            $headers,
+            Resources::X_MS_LEASE_ID,
+            $options->getLeaseId()
+        );
+
+        $this->addOptionalHeader(
+            $headers,
+            Resources::X_MS_SOURCE_LEASE_ID,
+            $options->getSourceLeaseId()
+        );
+
+        $response = $this->send(
+            $method,
+            $headers,
+            $queryParams,
+            $postParams,
+            $destinationBlobPath,
+            $statusCode
+        );
+
+        return CopyBlobResult::create($response->getHeader());
+    }
+
+
     /**
      * Establishes an exclusive one-minute write lock on a blob. To write to a locked
      * blob, a client must provide a lease ID.
-     * 
+     *
      * @param string                     $container name of the container
      * @param string                     $blob      name of the blob
-     * @param Models\AcquireLeaseOptions $options   optional parameters
-     * 
-     * @return Models\AcquireLeaseResult
-     * 
+     * @param AcquireLeaseOptions        $options   optional parameters
+     * @param int                        $duration   optional parameters
+     *
+     * @return AcquireLeaseResult
+     *
      * @see http://msdn.microsoft.com/en-us/library/windowsazure/ee691972.aspx
      */
-    public function acquireLease($container, $blob, $options = null)
+    public function acquireLease($container, $blob, $options = null, $duration = -1)
     {
         $headers = $this->_putLeaseImpl(
             LeaseMode::ACQUIRE_ACTION,
@@ -2379,9 +2486,10 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
             $blob,
             null /* leaseId */,
             is_null($options) ? new AcquireLeaseOptions() : $options,
-            is_null($options) ? null : $options->getAccessCondition()
+            is_null($options) ? null : $options->getAccessCondition(),
+            $duration
         );
-        
+
         return AcquireLeaseResult::create($headers);
     }
     
@@ -2457,5 +2565,17 @@ class BlobRestProxy extends ServiceRestProxy implements IBlob
         );
         
         return BreakLeaseResult::create($headers);
+    }
+
+
+    /**
+     * @param $blobUrl
+     * @return string
+     */
+    public function getBasename($blobUrl)
+    {
+        $path = parse_url($blobUrl, PHP_URL_PATH);
+
+        return basename($path);
     }
 }

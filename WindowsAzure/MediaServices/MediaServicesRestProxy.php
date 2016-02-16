@@ -23,6 +23,7 @@
  */
 
 namespace WindowsAzure\MediaServices;
+use WindowsAzure\Blob\BlobRestProxy;
 use WindowsAzure\Common\Internal\Utilities;
 use WindowsAzure\Common\Internal\Resources;
 use WindowsAzure\Common\Internal\Validate;
@@ -89,6 +90,70 @@ class MediaServicesRestProxy extends ServiceRestProxy implements IMediaServices
         Resources::ACCEPT_HEADER            => Resources::ACCEPT_HEADER_VALUE,
         Resources::CONTENT_TYPE             => Resources::XML_ATOM_CONTENT_TYPE
     );
+
+    /**
+     * @param $source
+     * @param BlobRestProxy $mediaServiceRelatedProbProxy
+     * @param Asset $asset
+     * @param bool|false $overrideFilename
+     * @return AssetFile
+     */
+    public function copyFromBlobUrlToAsset($source, BlobRestProxy $mediaServiceRelatedProbProxy, Asset $asset, $overrideFilename = false)
+    {
+        // Copy blob:
+        $assetContainer = $this->getAssetContainerName($asset);
+        $filename = $overrideFilename ? $overrideFilename : $mediaServiceRelatedProbProxy->getBasename($source);
+        $mediaServiceRelatedProbProxy->copyExternalBlob($assetContainer, $filename, $source);
+
+        // Create asset file:
+        $assetFile = new AssetFile($filename, $asset->getId());
+        $assetFile->setIsPrimary(false);
+        $assetFile->setIsEncrypted(false);
+        //$assetFile->setMimeType($sourceProperties->getContentType());
+        //$assetFile->setContentFileSize($sourceProperties->getContentLength());
+        $assetFile = $this->createAssetFile($assetFile);
+
+        return $assetFile;
+    }
+
+
+    /**
+     * Create new asset
+     *
+     * @param \WindowsAzure\MediaServices\Models\AssetFile $asset Asset data
+     *
+     * @return \WindowsAzure\MediaServices\Models\AssetFile Created asset
+     */
+    public function createAssetFile($assetFile)
+    {
+        Validate::isA($assetFile, 'WindowsAzure\MediaServices\Models\AssetFile', 'assetFile');
+
+        return AssetFile::createFromOptions($this->_createEntity($assetFile, 'Files'));
+    }
+
+
+    /**
+     * @param Asset $asset
+     * @return string
+     */
+    public function getAssetContainerName(Asset $asset)
+    {
+        return 'asset-' . $this->getAssetCanonicalId($asset->getId());
+    }
+
+
+    /**
+     * @param $assetId
+     * @return mixed
+     */
+    public function getAssetCanonicalId($assetId)
+    {
+        $idParts = explode(':', $assetId);
+
+        return end($idParts);
+    }
+
+
 
     /**
      * Sends HTTP request with the specified parameters.

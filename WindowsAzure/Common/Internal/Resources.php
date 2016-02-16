@@ -160,6 +160,8 @@ class Resources
     const X_MS_CONTINUATION_NEXTPARTITIONKEY = 'x-ms-continuation-nextpartitionkey';
     const X_MS_CONTINUATION_NEXTROWKEY       = 'x-ms-continuation-nextrowkey';
     const X_MS_REQUEST_ID                    = 'x-ms-request-id';
+    const X_MS_COPY_ID                       = 'x-ms-copy-id';
+    const X_MS_COPY_STATUS                   = 'x-ms-copy-status';
     const ETAG                               = 'etag';
     const LAST_MODIFIED                      = 'last-modified';
     const DATE                               = 'date';

@@ -48,7 +48,18 @@ class CopyBlobResult
      * @var \DateTime
      */
     private $_lastModified;
-    
+
+    /**
+     * @var string
+     */
+    private $_xMsCopyId;
+
+    /**
+     * @var string
+     */
+    private $_xMsCopyStatus;
+
+
     /**
      * Creates CopyBlobResult object from the response of the copy blob request.
      * 
@@ -68,6 +79,8 @@ class CopyBlobResult
                 $headers);
             $result->setLastModified(Utilities::rfc1123ToDateTime($lastModified));
         }
+        $result->setXMsCopyId(Utilities::tryGetValueInsensitive(Resources::X_MS_COPY_ID, $headers));
+        $result->setXMsCopyStatus(Utilities::tryGetValueInsensitive(Resources::X_MS_COPY_STATUS, $headers));
         
         return $result;
     }
@@ -115,6 +128,40 @@ class CopyBlobResult
     {
         $this->_lastModified = $lastModified;
     }
+
+
+    /**
+     * @return string
+     */
+    public function getXMsCopyId()
+    {
+        return $this->_xMsCopyId;
+    }
+
+    /**
+     * @param string $xMsCopyId
+     */
+    public function setXMsCopyId($xMsCopyId)
+    {
+        $this->_xMsCopyId = $xMsCopyId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getXMsCopyStatus()
+    {
+        return $this->_xMsCopyStatus;
+    }
+
+    /**
+     * @param string $xMsCopyStatus
+     */
+    public function setXMsCopyStatus($xMsCopyStatus)
+    {
+        $this->_xMsCopyStatus = $xMsCopyStatus;
+    }
+
 }
 
 

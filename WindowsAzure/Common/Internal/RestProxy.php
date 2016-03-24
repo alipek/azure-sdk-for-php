@@ -61,6 +61,11 @@ class RestProxy
     private $_uri;
     
     /**
+     * @var bool 
+     */
+    private $log = true;
+    
+    /**
      * Initializes new RestProxy object.
      *
      * @param IHttpClient $channel        The HTTP client used to send HTTP requests.
@@ -139,9 +144,38 @@ class RestProxy
         $url->appendUrlPath($path);
         
         $channel->send($this->_filters, $url);
+        $response = $channel->getResponse();
+        if ($this->log) {
+           $this->log($channel, $response);
+        }
         
-        return $channel->getResponse();
+        return $response;
     }
+
+    protected function log($channel, $response)
+    {
+        if (!$channel || !$response) return;
+        
+        $msg = "=====================================================================================================================\n";
+        $msg .= "=====================================================================================================================\n";
+        $msg .= "REQUEST: " . date('Y-m-d H:i:s') . "\n";
+        $msg .= $channel->getMethod() . " " . $channel->getUrl() . "\n";
+        $msg .= "Headers:\n";
+        foreach ($channel->getHeaders() as $name => $value) {
+            $msg .= "  " . $name . ': ' . $value . "\n";
+        }
+        $msg .= "Body:\n";
+        $msg .= $channel->getBody() . "\n\n";
+        $msg .= "----------------------------------------\n";
+        $msg .= "RESPONSE: " . $response->getStatus() . "\n";
+        $msg .= "  Status : " . $response->getStatus() . "\n";
+        $msg .= "  ReasonPhrase : " . $response->getReasonPhrase() . "\n";
+        $msg .= "  Body : " . $response->getBody() . "\n\n";
+
+        $file = __DIR__ . '/../../../../../../azure.log';
+        file_put_contents($file, $msg, FILE_APPEND);
+    }
+
 
     /**
      * Adds new filter to new service rest proxy object and returns that object back.

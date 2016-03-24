@@ -63,7 +63,7 @@ class RestProxy
     /**
      * @var bool 
      */
-    private $log = true;
+    private $log = false;
     
     /**
      * Initializes new RestProxy object.
